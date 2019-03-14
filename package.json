@@ -32,23 +32,16 @@
     }
   },
   "xo": {
-    "globals": [
-      "window",
-      "document"
-    ],
-    "rules": {
-      "import/no-unresolved": false
-    },
+    "semicolon": false,
+    "singleQuote": false,
+    "rules": {},
     "extends": "xo-typescript",
     "extensions": [
       "ts"
-    ],
-    "ignore": [
-      "src/patterns/templates",
-      "fractal.js"
     ]
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "ts-node": "^8.0.3"
   }
 }
