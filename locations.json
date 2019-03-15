@@ -1,0 +1,11 @@
+{
+  "locations": [{
+      "name": "Denver",
+      "zip": "80202"
+    },
+    {
+      "name": "OC",
+      "zip": "92688"
+    }
+  ]
+}

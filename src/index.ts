@@ -1,41 +1,73 @@
 import * as fs from 'fs'
-import {LocationDataFile, validate, EncodedLocation, LocationCache} from './data'
-
-import * as rawData from './locations.json'
+import {format} from 'date-fns'
+import * as emojiWeather from 'emojiweather'
+import {LocationDataFile, validate, EncodedLocation, LocationCache, Result} from './data'
 import {AccuweatherClient} from './accuweather'
 
-const apiKey = 'lIABwAVufonP4Vjjv2qWZ8R3tlf98Jso'
-
-// TODO: load chache from disk
-const cache: LocationCache = {}
-const client = new AccuweatherClient(apiKey)
-const locationData: LocationDataFile = validate(rawData);
-
 (async () => {
-	const locationsWithCodes: EncodedLocation[] = await locationData.locations.map(async location => {
-		if (!location.zip || location.zip.length <= 0 || !location.name || location.name.length <= 0) {
-			return undefined
-		}
+	const apiKey = 'lIABwAVufonP4Vjjv2qWZ8R3tlf98Jso'
+	let rawData = {}
 
-		// Check all zips against cache for location codes we've already fetched
-		// make all requests for remaining location codes
-		const resolvedCode = cache[location.zip] || await client.getLocationCode(location.zip)
-		return {
-			name: location.name,
-			zip: location.zip,
-			locationCode: resolvedCode
-		}
-	})
-	const newCache: LocationCache = locationsWithCodes.reduce((prev, curr) => ({
-		...prev,
-		[curr.zip]: curr.locationCode
-	}))
-	fs.writeFileSync('./locationCode.cache.json', JSON.stringify(newCache))
+	try {
+		rawData = require(`${process.cwd()}/locations.json`)
+	} catch (error) {
+		console.error('Error: locations.json file not found in current directory.', error)
+		return
+	}
 
-	// https://developer.accuweather.com/accuweather-locations-api/apis/get/locations/v1/postalcodes/search
+	let cacheData = {}
+	try {
+		cacheData = require(`${process.cwd()}/locationCodes.cache.json`)
+	} catch (error) {
+		console.warn('No cache found, loading new zip ciodes', error)
+	}
 
-	// cache location code responses to disk
+	const cache: LocationCache = cacheData
+	const client = new AccuweatherClient(apiKey)
+	const locationData: LocationDataFile = validate(rawData)
 
-	// make all requests for weather current conditions and local time
-	// https://developer.accuweather.com/accuweather-current-conditions-api/apis/get/currentconditions/v1/%7BlocationKey%7D
+	const locationsWithCodes: EncodedLocation[] = []
+	await Promise
+		.all(locationData.locations.map(async (location): Promise<EncodedLocation> => {
+			if (!location.zip || location.zip.length <= 0 || !location.name || location.name.length <= 0) {
+				return undefined
+			}
+
+			// Check all zips against cache for location codes we've already fetched
+			// https://developer.accuweather.com/accuweather-locations-api/apis/get/locations/v1/postalcodes/search
+			// 38822_PC
+
+			if (cache[location.zip]) {
+				return {
+					name: location.name,
+					zip: location.zip,
+					locationCode: cache[location.zip]
+				}
+			}
+
+			return client.getLocationCode(location.zip).then(code => ({
+				name: location.name,
+				zip: location.zip,
+				locationCode: code
+			}))
+		}))
+		.then((locations: EncodedLocation[]) => {
+			locationsWithCodes.push(...locations)
+			const newCache = locations.reduce<LocationCache>((prev, curr) => ({
+				...prev,
+				[curr.zip]: curr.locationCode
+			}), {})
+			fs.writeFileSync('./locationCodes.cache.json', JSON.stringify(newCache))
+		})
+		.catch(error => console.error('Problem getting location codes', error))
+
+	const weatherConditions: Result[] = []
+	await Promise
+		.all(locationsWithCodes.map(client.getConditions))
+		.then(conditions => weatherConditions.push(...conditions))
+		.catch(error => console.error('Problem getting weather conditions', error))
+
+	const results = `Location, DateTime, Temp, Conditions
+${weatherConditions.map(w => `${w.name}, ${format(w.rawTime, 'MM/DD/YYYY h:m A')}, ${w.tempF}°F, ${emojiWeather(w.currentConditions)}  ${w.currentConditions}`).join('\n')}`
+	console.log(results)
 })()
