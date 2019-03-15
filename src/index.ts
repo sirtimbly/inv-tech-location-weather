@@ -18,9 +18,7 @@ import {AccuweatherClient} from './accuweather'
 	let cacheData = {}
 	try {
 		cacheData = require(`${process.cwd()}/locationCodes.cache.json`)
-	} catch (error) {
-		console.warn('No cache found, loading new zip ciodes', error)
-	}
+	} catch (error) {} // eslint-disable-line @typescript-eslint/no-unused-vars
 
 	const cache: LocationCache = cacheData
 	const client = new AccuweatherClient(apiKey)
@@ -35,7 +33,6 @@ import {AccuweatherClient} from './accuweather'
 
 			// Check all zips against cache for location codes we've already fetched
 			// https://developer.accuweather.com/accuweather-locations-api/apis/get/locations/v1/postalcodes/search
-			// 38822_PC
 
 			if (cache[location.zip]) {
 				return {
