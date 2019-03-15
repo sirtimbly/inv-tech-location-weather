@@ -2,9 +2,14 @@
 
 ## Installation
 
-1. Clone thus repo locally and then `cd` into the cloned project directory.
-2. Install dependencies by running `npm install`
-3. Build the files with `npm run build`
+1. Clone this repo locally and then `cd` into the cloned project directory.
+2. Install dependencies
+3. Build the files
+
+```sh
+npm install
+npm run build
+```
 
 ## Configuration
 
@@ -12,9 +17,13 @@ The list of locations is stored in `locations.json` – edit this file to get ad
 
 ## Running
 
-From the command line, in the root project directory, run `node dist/index.js`
+After following the installation instructions, from the command line, in the root project directory, run
 
-  Alternately you can run the .ts files diretly with `ts-node src/index.ts`
+```sh
+node dist/index.js
+```
+
+> Alternately you can run the .ts files directly (without building first) by running `ts-node src/index.ts`
 
 The ouput will be printed to the terminal. The output is meant to be comma seperated values, so you can pipe the output to a new .csv file and open as a spreadsheet.
 
